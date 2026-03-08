@@ -105,7 +105,7 @@ class Assets:
         logs = {
             "add": f"+{display_amount}",
             "remove": f"-{display_amount}",
-            "set": f"stock set to {display_amount}"
+            "set": f"set to {display_amount}"
         }
 
         History.document(f"Stock change {asset['name']} {logs[mode]} ({reason})", "assets")
@@ -143,24 +143,25 @@ class History:
             "date": now.strftime("%m/%d/%H:%M"),
         })
 
-    def export():
+    def export(limit=0, format=False, compact=False, compactness=42, inclusion=None):
         entries = history.all()
-        if not entries:
-            return "No history."
-        lines = []
-        for entry in entries:
-            lines.append(f"{entry['date']} | [{entry['type']}] {entry['event']}")
-        return "\n".join(lines)
+        if limit:
+            entries = entries[-limit:]
+            entries.reverse()
 
-    def format(limit=7, compact=False):
-        entries = history.all()[-limit:]
-        entries.reverse()
         if not entries:
-            return "```\nNo history.\n```"
+            return "```\nNo history.\n```" if format else "No history."
+
         lines = []
         for entry in entries:
-            lines.append(f"{entry['date']} | {compact and entry['event'] or truncate(entry['event'])}")
-        return "```\n" + "\n".join(lines) + "\n```"
+            if inclusion and not all(s.lower() in entry['event'].lower() or s.lower() == entry['type'].lower() for s in inclusion):
+                continue
+            event = truncate(entry['event'], compactness) if compact else entry['event']
+            prefix = f"{entry['date']} | " if compact else f"{entry['date']} | [{entry['type']}] "
+            lines.append(f"{prefix}{event}")
+
+        output = "\n".join(lines)
+        return f"```\n{output}\n```" if format else output
 
 
 class Ledger:

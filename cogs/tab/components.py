@@ -1,7 +1,8 @@
+import io
 import discord
 from utility.embeds import success, error, info
 from utility import parse_float, generate_uuid
-from utility.database import Tab
+from utility.database import Tab, History
 from utility.views import SelectView
 
 
@@ -76,12 +77,24 @@ class DebtActionButton(discord.ui.Button):
         await interaction.response.send_modal(ManageDebtModal(self.action, associate))
 
 
+class ExportHistoryButton(discord.ui.Button):
+    def __init__(self, associate):
+        super().__init__(label="Export History", style=discord.ButtonStyle.gray)
+        self.associate = associate
+
+    async def callback(self, interaction: discord.Interaction):
+        content = History.export(inclusion=["tab", self.associate["name"]])
+        file = discord.File(io.BytesIO(content.encode()), filename=f"{self.associate['name']}_history.txt")
+        await interaction.response.send_message(file=file, ephemeral=True)
+
+
 class AssociateOverviewView(discord.ui.View):
     def __init__(self, associate):
         super().__init__()
-        self.add_item(DebtActionButton("Add Debt", discord.ButtonStyle.green, "add", associate))
-        self.add_item(DebtActionButton("Subtract Debt", discord.ButtonStyle.red, "remove", associate))
+        self.add_item(DebtActionButton("Increase Debt", discord.ButtonStyle.green, "add", associate))
+        self.add_item(DebtActionButton("Decrease Debt", discord.ButtonStyle.red, "remove", associate))
         self.add_item(DebtActionButton("Set Debt", discord.ButtonStyle.blurple, "set", associate))
+        self.add_item(ExportHistoryButton(associate))
 
 
 class AssociateSelect(discord.ui.Select):
@@ -105,10 +118,11 @@ class AssociateSelect(discord.ui.Select):
                     {"name": "Name", "value": associate["name"], "inline": True},
                     {"name": "Uuid", "value": associate["id"], "inline": True},
                     {"name": "Debt", "value": f"**${associate['debt']}**", "inline": True},
+                    {"name": "Recent History", "value": History.export(limit=7, format=True, compact=True, inclusion=["tab", associate["name"]]), "inline": False}
                 ]
             ),
             view=AssociateOverviewView(associate),
-            ephemeral=True,
+            ephemeral=True
         )
 
 

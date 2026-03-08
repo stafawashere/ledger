@@ -48,8 +48,8 @@ class BalanceActionButton(discord.ui.Button):
 class LedgerView(discord.ui.View):
     def __init__(self):
         super().__init__()
-        self.add_item(BalanceActionButton("Add Bal", discord.ButtonStyle.green, "add"))
-        self.add_item(BalanceActionButton("Subtract Bal", discord.ButtonStyle.red, "remove"))
+        self.add_item(BalanceActionButton("Increase Bal", discord.ButtonStyle.green, "add"))
+        self.add_item(BalanceActionButton("Decrease Bal", discord.ButtonStyle.red, "remove"))
         self.add_item(BalanceActionButton("Set Bal", discord.ButtonStyle.blurple, "set"))
         self.add_item(ExportHistoryActionButton("Export History", discord.ButtonStyle.gray, "export_history"))
 

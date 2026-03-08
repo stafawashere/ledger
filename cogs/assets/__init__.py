@@ -1,7 +1,7 @@
 from discord import app_commands
 from discord.ext import commands
 from utility.embeds import error, info
-from utility.database import Assets
+from utility.database import Assets, History
 from .components import AssetsListView, AssetSelect
 from utility.views import SelectView
 
@@ -20,9 +20,13 @@ class AssetsCog(commands.Cog):
             description = "No assets yet."
 
         await interaction.response.send_message(
-            embed=info(description, title="Assets Overview"),
-            view=AssetsListView(),
-            ephemeral=True,
+            embed=info(
+                description,
+                title="Assets Overview",
+                fields=[{
+                    "name": "Recent History", "value": History.export(limit=7, format=True, compact=True, inclusion=["assets"]), "inline": False
+                }]),
+            view=AssetsListView()
         )
 
     @app_commands.command(name="asset", description="View & Manage Asset Stock")

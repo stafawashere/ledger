@@ -1,7 +1,8 @@
+import io
 import discord
 from utility.embeds import success, error, info
 from utility import parse_float, generate_uuid
-from utility.database import Assets
+from utility.database import Assets, History
 from utility.views import SelectView
 
 
@@ -103,6 +104,11 @@ class AssetSettingsModal(discord.ui.Modal, title="Asset Settings"):
             default=asset["unit"],
             required=True,
         )
+        self.stock_input = discord.ui.TextInput(
+            label="Current Stock",
+            default=str(int(asset["stock"])),
+            required=True,
+        )
         self.image_input = discord.ui.TextInput(
             label="Thumbnail URL",
             default=asset.get("display_image", ""),
@@ -110,16 +116,27 @@ class AssetSettingsModal(discord.ui.Modal, title="Asset Settings"):
         )
         self.add_item(self.name_input)
         self.add_item(self.unit_input)
+        self.add_item(self.stock_input)
         self.add_item(self.image_input)
 
     async def on_submit(self, interaction: discord.Interaction):
+        stock = parse_float(self.stock_input.value)
+        if stock is None:
+            return await interaction.response.send_message(
+                embed=error("Invalid stock amount."), ephemeral=True
+            )
+
         Assets.update_settings(
             self.asset["id"],
             self.name_input.value,
             self.unit_input.value,
             self.image_input.value or "",
         )
-        
+
+        old_stock = self.asset["stock"]
+        if stock != old_stock:
+            Assets.update_stock(self.asset["id"], stock, "Set via settings", "set")
+
         await interaction.response.send_message(
             embed=success(f"Updated **{self.name_input.value}**"),
             ephemeral=True,
@@ -136,13 +153,24 @@ class AssetSettingsButton(discord.ui.Button):
         await interaction.response.send_modal(AssetSettingsModal(asset))
 
 
+class ExportHistoryButton(discord.ui.Button):
+    def __init__(self, asset):
+        super().__init__(label="Export History", style=discord.ButtonStyle.gray, row=1)
+        self.asset = asset
+
+    async def callback(self, interaction: discord.Interaction):
+        content = History.export(inclusion=["assets", self.asset["name"]])
+        file = discord.File(io.BytesIO(content.encode()), filename=f"{self.asset['name']}_history.txt")
+        await interaction.response.send_message(file=file, ephemeral=True)
+
+
 class AssetOverviewView(discord.ui.View):
     def __init__(self, asset):
         super().__init__()
-        self.add_item(AssetActionButton("Add Stock", discord.ButtonStyle.green, "add", asset, row=0))
-        self.add_item(AssetActionButton("Subtract Stock", discord.ButtonStyle.red, "remove", asset, row=0))
-        self.add_item(AssetActionButton("Set Stock", discord.ButtonStyle.blurple, "set", asset, row=1))
+        self.add_item(AssetActionButton("Increase Stock", discord.ButtonStyle.green, "add", asset))
+        self.add_item(AssetActionButton("Decrease Stock", discord.ButtonStyle.red, "remove", asset))
         self.add_item(AssetSettingsButton(asset))
+        self.add_item(ExportHistoryButton(asset))
 
 
 class AssetSelect(discord.ui.Select):

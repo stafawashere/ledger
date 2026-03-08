@@ -1,7 +1,7 @@
 from discord import app_commands
 from discord.ext import commands
 from utility.embeds import error, info
-from utility.database import Tab
+from utility.database import Tab, History
 from .components import TabListView, AssociateSelect
 from utility.views import SelectView
 
@@ -20,9 +20,13 @@ class TabCog(commands.Cog):
             description = "No associates yet."
 
         await interaction.response.send_message(
-            embed=info(description, title="Tab Overview"),
-            view=TabListView(),
-            ephemeral=True,
+            embed=info(
+                description,
+                title="Tab Overview",
+                fields=[{
+                    "name": "Recent History", "value": History.export(limit=7, format=True, compact=True, inclusion=["tab"]), "inline": False
+                }]),
+            view=TabListView()
         )
 
     @app_commands.command(name="associate", description="View & Manage Associate")
@@ -35,7 +39,7 @@ class TabCog(commands.Cog):
 
         await interaction.response.send_message(
             view=SelectView(AssociateSelect(associates)),
-            ephemeral=True,
+            ephemeral=True
         )
 
 

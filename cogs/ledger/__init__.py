@@ -18,7 +18,7 @@ class LedgerCog(commands.Cog):
                     {"name": "Balance / Predicted", "value": f"${Balance.get()} / ${Balance.predict()}", "inline": True},
                     {"name": "Associates", "value": str(Tab.count()), "inline": True},
                     {"name": "Assets", "value": str(Assets.count()), "inline": True},
-                    {"name": "Recent History", "value": History.format(), "inline": False},
+                    {"name": "Recent History", "value": History.export(limit=7, format=True, compact=True), "inline": False},
                 ]
             ),
             view=LedgerView(),
