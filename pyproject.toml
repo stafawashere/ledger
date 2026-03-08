@@ -1,0 +1,12 @@
+[project]
+name = "ledger-bot"
+version = "0.1.0"
+description = "Personal Ledger Bot to manage your finances"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "discord-py>=2.7.1",
+    "python-dotenv>=1.2.2",
+    "tinydb>=4.8.2",
+    "watchfiles>=1.1.1",
+]
