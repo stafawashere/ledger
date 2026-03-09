@@ -67,7 +67,7 @@ class Assets:
             "display_image": display_image,
             "id": asset_id,
         })
-        History.document(f"New asset {name}" + (f" ({int(initial_stock)}{unit}(s) stock)" if initial_stock else ""), "assets")
+        History.document(f"New asset {name}" + (f" ({int(initial_stock)} {unit}(s) stock)" if initial_stock else ""), "assets")
 
     def count():
         return len(assets.all())
@@ -100,7 +100,7 @@ class Assets:
         old_stock = asset["stock"]
         new_stock = {"add": old_stock + amount, "remove": old_stock - amount, "set": amount}[mode]
         assets.update({"stock": new_stock}, q.id == asset_id)
-        display_amount = f"{int(amount)({asset['unit']})}(s)"
+        display_amount = f"{int(amount)} {asset['unit']}(s)"
 
         logs = {
             "add": f"+{display_amount}",
@@ -130,8 +130,8 @@ class Balance:
     def get():
         return ledger.all()[0]["balance"]
 
-    def predict():
-        return Balance.get() + sum(a["debt"] for a in tab.all())
+    def owed():
+        return sum(a["debt"] for a in tab.all())
     
 
 class History:
@@ -145,17 +145,22 @@ class History:
 
     def export(limit=0, format=False, compact=False, compactness=42, inclusion=None):
         entries = history.all()
+
+        if inclusion:
+            entries = [e for e in entries if all(
+                s.lower() in e['event'].lower() or s.lower() == e['type'].lower() for s in inclusion
+            )]
+
         if limit:
             entries = entries[-limit:]
-            entries.reverse()
+
+        entries.reverse()
 
         if not entries:
             return "```\nNo history.\n```" if format else "No history."
 
         lines = []
         for entry in entries:
-            if inclusion and not all(s.lower() in entry['event'].lower() or s.lower() == entry['type'].lower() for s in inclusion):
-                continue
             event = truncate(entry['event'], compactness) if compact else entry['event']
             prefix = f"{entry['date']} | " if compact else f"{entry['date']} | [{entry['type']}] "
             lines.append(f"{prefix}{event}")

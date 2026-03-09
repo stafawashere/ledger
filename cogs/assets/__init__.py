@@ -14,7 +14,7 @@ class AssetsCog(commands.Cog):
     async def assets(self, interaction):
         asset_list = sorted(Assets.get_all(), key=lambda a: a["stock"], reverse=True)
         if asset_list:
-            lines = [f"> {i}. **{a['name']}** — `{int(a['stock'])}`{a['unit']}(s)" for i, a in enumerate(asset_list, 1)]
+            lines = [f"> {i}. **{a['name']}** — `{int(a['stock'])}` {a['unit']}(s)" for i, a in enumerate(asset_list, 1)]
             description = "\n".join(lines)
         else:
             description = "No assets yet."

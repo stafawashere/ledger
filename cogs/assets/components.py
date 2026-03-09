@@ -42,7 +42,7 @@ class AddAssetModal(discord.ui.Modal, title="Assets Overview & Manage Stock"):
         asset_id = generate_uuid()
         Assets.add_asset(self.name.value, asset_id, self.unit.value, display_image, stock)
         await interaction.response.send_message(
-            embed=success(f"**{self.name.value} (`{asset_id}`)**{f' → {int(stock)}{self.unit.value}(s) in stock' if stock else ''}", thumbnail=display_image)
+            embed=success(f"**{self.name.value} (`{asset_id}`)**{f' → {int(stock)} {self.unit.value}(s) in stock' if stock else ''}", thumbnail=display_image)
         )
 
 
@@ -59,7 +59,7 @@ class ManageAssetModal(discord.ui.Modal):
     )
 
     def __init__(self, action, asset):
-        super().__init__(title=f"{action.capitalize()} Stock — {asset['name']}")
+        super().__init__(title=f"{action.capitalize()} Stock — {asset['name']}"[:45])
         self.action = action
         self.asset = asset
 
@@ -74,7 +74,7 @@ class ManageAssetModal(discord.ui.Modal):
 
         unit = self.asset["unit"]
         await interaction.response.send_message(embed=success(
-            f"{self.asset['name']} stock is now {int(old_stock)}{unit}(s) → {int(new_stock)}{unit}(s)",
+            f"{self.asset['name']} stock is now {int(old_stock)} {unit}(s) → {int(new_stock)} {unit}(s)",
             title=f"Stock {self.action.capitalize()}",
         ))
 
@@ -110,7 +110,7 @@ class AssetSettingsModal(discord.ui.Modal, title="Asset Settings"):
             required=True,
         )
         self.image_input = discord.ui.TextInput(
-            label="Thumbnail URL",
+            label="Thumbnail URL (256x256)",
             default=asset.get("display_image", ""),
             required=False,
         )
@@ -179,7 +179,7 @@ class AssetSelect(discord.ui.Select):
             discord.SelectOption(
                 label=a["name"],
                 value=a["id"],
-                description=f"ID: {a['id']} | Stock: {int(a['stock'])}{a['unit']}(s)"
+                description=f"ID: {a['id']} | Stock: {int(a['stock'])} {a['unit']}(s)"
             )
             for a in asset_list[:25]
         ]
@@ -195,7 +195,7 @@ class AssetSelect(discord.ui.Select):
                     {"name": "Name", "value": asset["name"], "inline": True},
                     {"name": "UUID", "value": asset["id"], "inline": True},
                     {"name": "Stock Unit", "value": asset["unit"], "inline": True},
-                    {"name": "Stock", "value": f"{int(asset['stock'])}`{asset['unit']}(s)`", "inline": False}
+                    {"name": "Stock", "value": f"{int(asset['stock'])} `{asset['unit']}(s)`", "inline": False}
                 ]
             ),
             view=AssetOverviewView(asset),
@@ -209,7 +209,7 @@ class DeleteAssetSelect(discord.ui.Select):
             discord.SelectOption(
                 label=a["name"],
                 value=a["id"],
-                description=f"ID: {a['id']} | Stock: {int(a['stock'])}{a['unit']}(s)",
+                description=f"ID: {a['id']} | Stock: {int(a['stock'])} {a['unit']}(s)",
             )
             for a in asset_list[:25]
         ]
@@ -228,11 +228,11 @@ class AssetsListView(discord.ui.View):
     def __init__(self):
         super().__init__()
 
-    @discord.ui.button(label="Create", style=discord.ButtonStyle.green)
+    @discord.ui.button(label="New Asset", style=discord.ButtonStyle.green)
     async def create_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(AddAssetModal())
 
-    @discord.ui.button(label="Delete", style=discord.ButtonStyle.red)
+    @discord.ui.button(label="Delete Asset", style=discord.ButtonStyle.red)
     async def delete_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         asset_list = Assets.get_all()
         if not asset_list:
