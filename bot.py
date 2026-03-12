@@ -18,11 +18,16 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 async def cog_watcher():
     async for changes in awatch("./cogs"):
+        await asyncio.sleep(0.5)
+        reloaded = set()
         for ch, path in changes:
             if path.endswith(".py"):
                 parts = os.path.normpath(path).split(os.sep)
                 cogs_idx = parts.index("cogs")
                 ext = f"cogs.{parts[cogs_idx + 1]}"
+                if ext in reloaded:
+                    continue
+                reloaded.add(ext)
                 try:
                     await bot.reload_extension(ext)
                     print(f"reloaded {ext}")

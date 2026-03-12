@@ -1,6 +1,7 @@
 from discord import app_commands
 from discord.ext import commands
 from utility.embeds import error, info
+from utility import fmt_num
 from utility.database import Assets, History
 from .components import AssetsListView, AssetSelect
 from utility.views import SelectView
@@ -14,7 +15,7 @@ class AssetsCog(commands.Cog):
     async def assets(self, interaction):
         asset_list = sorted(Assets.get_all(), key=lambda a: a["stock"], reverse=True)
         if asset_list:
-            lines = [f"> {i}. **{a['name']}** — `{int(a['stock'])}` {a['unit']}(s)" for i, a in enumerate(asset_list, 1)]
+            lines = [f"> {i}. **{a['name']}** — `{fmt_num(a['stock'])}` {a['unit']}(s)" for i, a in enumerate(asset_list, 1)]
             description = "\n".join(lines)
         else:
             description = "No assets yet."

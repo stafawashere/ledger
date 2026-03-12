@@ -22,7 +22,7 @@ class BalanceModal(discord.ui.Modal):
         self.action = action
 
     async def on_submit(self, interaction: discord.Interaction):
-        value = parse_float(self.amount.value)
+        value = parse_float(self.amount.value, allow_negative=False)
         if value is None:
             return await interaction.response.send_message(
                 embed=error("Invalid amount."), ephemeral=True

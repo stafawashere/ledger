@@ -1,6 +1,6 @@
 from tinydb import TinyDB, Query
 from datetime import datetime
-from utility import truncate
+from utility import truncate, fmt_num
 
 db = TinyDB("ledger.json", indent=3)
 q = Query()
@@ -13,12 +13,15 @@ history = db.table("history")
 
 class Tab:
     def add_associate(name, associate_id, initial_debt=0):
+        if Tab.find(associate_id):
+            return False
         tab.insert({
             "name": name,
             "debt": initial_debt,
             "id": associate_id,
         })
         History.document(f"New associate {name}" + (f" (${initial_debt} debt)" if initial_debt else ""), "tab")
+        return True
 
     def count():
         return len(tab.all())
@@ -30,12 +33,14 @@ class Tab:
         associate = Tab.find(associate_id)
         if not associate:
             return False
-        
+
         tab.remove(q.id == associate_id)
         History.document(f"Removed associate {associate['name']}", "tab")
         return True
 
     def find(identifier):
+        if not identifier:
+            return None
         key = identifier.strip().lower()
         for entry in tab.all():
             if entry["name"].lower() == key or entry["id"].lower() == key:
@@ -44,13 +49,15 @@ class Tab:
 
     def update_debt(associate_id, amount, reason, mode):
         associate = Tab.find(associate_id)
-        old_debt =  associate["debt"]
+        if not associate:
+            return None, None
+        old_debt = associate["debt"]
         new_debt = {"add": old_debt + amount, "remove": old_debt - amount, "set": amount}[mode]
         tab.update({"debt": new_debt}, q.id == associate_id)
-    
+
         logs = {
-            "add": f"owes -${amount}", 
-            "remove": f"paid off +${amount}", 
+            "add": f"incurred +${amount}",
+            "remove": f"paid off ${amount}",
             "set": f"debt set to ${amount}"
         }
 
@@ -60,6 +67,8 @@ class Tab:
 
 class Assets:
     def add_asset(name, asset_id, unit, display_image="", initial_stock=0):
+        if Assets.find(asset_id):
+            return False
         assets.insert({
             "name": name,
             "unit": unit,
@@ -67,7 +76,8 @@ class Assets:
             "display_image": display_image,
             "id": asset_id,
         })
-        History.document(f"New asset {name}" + (f" ({int(initial_stock)} {unit}(s) stock)" if initial_stock else ""), "assets")
+        History.document(f"New asset {name}" + (f" ({fmt_num(initial_stock)} {unit}(s) stock)" if initial_stock else ""), "assets")
+        return True
 
     def count():
         return len(assets.all())
@@ -84,6 +94,8 @@ class Assets:
         return True
 
     def find(identifier):
+        if not identifier:
+            return None
         key = identifier.strip().lower()
         for entry in assets.all():
             if entry["name"].lower() == key or entry["id"].lower() == key:
@@ -97,10 +109,12 @@ class Assets:
 
     def update_stock(asset_id, amount, reason, mode):
         asset = Assets.find(asset_id)
+        if not asset:
+            return None, None
         old_stock = asset["stock"]
         new_stock = {"add": old_stock + amount, "remove": old_stock - amount, "set": amount}[mode]
         assets.update({"stock": new_stock}, q.id == asset_id)
-        display_amount = f"{int(amount)} {asset['unit']}(s)"
+        display_amount = f"{fmt_num(amount)} {asset['unit']}(s)"
 
         logs = {
             "add": f"+{display_amount}",
@@ -114,7 +128,11 @@ class Assets:
 
 class Balance:
     def update(amount, reason, mode):
-        old_bal = ledger.all()[0]["balance"]
+        bal = ledger.all()
+        if not bal:
+            Ledger.init()
+            bal = ledger.all()
+        old_bal = bal[0]["balance"]
         new_bal = {"add": old_bal + amount, "remove": old_bal - amount, "set": amount}[mode]
         ledger.update({"balance": new_bal})
 
@@ -128,11 +146,15 @@ class Balance:
         return new_bal, old_bal
 
     def get():
-        return ledger.all()[0]["balance"]
+        bal = ledger.all()
+        if not bal:
+            Ledger.init()
+            return 0
+        return bal[0]["balance"]
 
     def owed():
         return sum(a["debt"] for a in tab.all())
-    
+
 
 class History:
     def document(event, etype):
@@ -147,7 +169,7 @@ class History:
         entries = history.all()
 
         if inclusion:
-            entries = [e for e in entries if all(
+            entries = [e for e in entries if any(
                 s.lower() in e['event'].lower() or s.lower() == e['type'].lower() for s in inclusion
             )]
 
@@ -171,8 +193,12 @@ class History:
 
 class Ledger:
     def read():
-        return ledger.all()[0]
-    
+        bal = ledger.all()
+        if not bal:
+            Ledger.init()
+            return ledger.all()[0]
+        return bal[0]
+
     def wipe():
         ledger.truncate()
         assets.truncate()

@@ -22,7 +22,7 @@ class AddAssociateModal(discord.ui.Modal, title="Add Associate"):
         super().__init__()
 
     async def on_submit(self, interaction: discord.Interaction):
-        debt = parse_float(self.inital_debt.value)
+        debt = parse_float(self.inital_debt.value, allow_negative=False)
         if debt is None:
             return await interaction.response.send_message(
                 embed=error("Invalid debt amount."), ephemeral=True
@@ -53,7 +53,7 @@ class ManageDebtModal(discord.ui.Modal):
         self.associate = associate
 
     async def on_submit(self, interaction: discord.Interaction):
-        amount = parse_float(self.amount.value)
+        amount = parse_float(self.amount.value, allow_negative=False)
         if amount is None:
             return await interaction.response.send_message(
                 embed=error("Invalid amount."), ephemeral=True

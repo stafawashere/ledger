@@ -6,11 +6,19 @@ def generate_uuid(length=8, upper=True):
         uid = uid[:length]
     return uid.upper() if upper else uid
 
-def parse_float(value, default=0):
+def parse_float(value, default=0, allow_negative=True):
     try:
-        return float(value) if value else default
+        result = float(value) if value else default
     except ValueError:
         return None
+    if not allow_negative and result is not None and result < 0:
+        return None
+    return result
+
+def fmt_num(value):
+    if value == int(value):
+        return str(int(value))
+    return f"{value:.2f}".rstrip("0").rstrip(".")
     
 def truncate(text, limit=42):
     if len(text) <= limit:

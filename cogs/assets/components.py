@@ -1,7 +1,7 @@
 import io
 import discord
 from utility.embeds import success, error, info
-from utility import parse_float, generate_uuid
+from utility import parse_float, generate_uuid, fmt_num
 from utility.database import Assets, History
 from utility.views import SelectView
 
@@ -33,7 +33,7 @@ class AddAssetModal(discord.ui.Modal, title="Assets Overview & Manage Stock"):
 
     async def on_submit(self, interaction: discord.Interaction):
         display_image = self.display_image.value or ""
-        stock = parse_float(self.current_stock.value)
+        stock = parse_float(self.current_stock.value, allow_negative=False)
         if stock is None:
             return await interaction.response.send_message(
                 embed=error("Invalid stock amount."), ephemeral=True
@@ -42,7 +42,7 @@ class AddAssetModal(discord.ui.Modal, title="Assets Overview & Manage Stock"):
         asset_id = generate_uuid()
         Assets.add_asset(self.name.value, asset_id, self.unit.value, display_image, stock)
         await interaction.response.send_message(
-            embed=success(f"**{self.name.value} (`{asset_id}`)**{f' → {int(stock)} {self.unit.value}(s) in stock' if stock else ''}", thumbnail=display_image)
+            embed=success(f"**{self.name.value} (`{asset_id}`)**{f' → {fmt_num(stock)} {self.unit.value}(s) in stock' if stock else ''}", thumbnail=display_image)
         )
 
 
@@ -64,7 +64,7 @@ class ManageAssetModal(discord.ui.Modal):
         self.asset = asset
 
     async def on_submit(self, interaction: discord.Interaction):
-        amount = parse_float(self.amount.value)
+        amount = parse_float(self.amount.value, allow_negative=False)
         if amount is None:
             return await interaction.response.send_message(
                 embed=error("Invalid amount."), ephemeral=True
@@ -74,7 +74,7 @@ class ManageAssetModal(discord.ui.Modal):
 
         unit = self.asset["unit"]
         await interaction.response.send_message(embed=success(
-            f"{self.asset['name']} stock is now {int(old_stock)} {unit}(s) → {int(new_stock)} {unit}(s)",
+            f"{self.asset['name']} stock is now {fmt_num(old_stock)} {unit}(s) → {fmt_num(new_stock)} {unit}(s)",
             title=f"Stock {self.action.capitalize()}",
         ))
 
@@ -106,7 +106,7 @@ class AssetSettingsModal(discord.ui.Modal, title="Asset Settings"):
         )
         self.stock_input = discord.ui.TextInput(
             label="Current Stock",
-            default=str(int(asset["stock"])),
+            default=str(fmt_num(asset["stock"])),
             required=True,
         )
         self.image_input = discord.ui.TextInput(
@@ -120,11 +120,14 @@ class AssetSettingsModal(discord.ui.Modal, title="Asset Settings"):
         self.add_item(self.image_input)
 
     async def on_submit(self, interaction: discord.Interaction):
-        stock = parse_float(self.stock_input.value)
+        stock = parse_float(self.stock_input.value, allow_negative=False)
         if stock is None:
             return await interaction.response.send_message(
                 embed=error("Invalid stock amount."), ephemeral=True
             )
+
+        old_stock = self.asset["stock"]
+        stock_changed = abs(stock - old_stock) > 1e-9
 
         Assets.update_settings(
             self.asset["id"],
@@ -133,8 +136,7 @@ class AssetSettingsModal(discord.ui.Modal, title="Asset Settings"):
             self.image_input.value or "",
         )
 
-        old_stock = self.asset["stock"]
-        if stock != old_stock:
+        if stock_changed:
             Assets.update_stock(self.asset["id"], stock, "Set via settings", "set")
 
         await interaction.response.send_message(
@@ -179,7 +181,7 @@ class AssetSelect(discord.ui.Select):
             discord.SelectOption(
                 label=a["name"],
                 value=a["id"],
-                description=f"ID: {a['id']} | Stock: {int(a['stock'])} {a['unit']}(s)"
+                description=f"ID: {a['id']} | Stock: {fmt_num(a['stock'])} {a['unit']}(s)"
             )
             for a in asset_list[:25]
         ]
@@ -195,7 +197,7 @@ class AssetSelect(discord.ui.Select):
                     {"name": "Name", "value": asset["name"], "inline": True},
                     {"name": "UUID", "value": asset["id"], "inline": True},
                     {"name": "Stock Unit", "value": asset["unit"], "inline": True},
-                    {"name": "Stock", "value": f"{int(asset['stock'])} `{asset['unit']}(s)`", "inline": False}
+                    {"name": "Stock", "value": f"{fmt_num(asset['stock'])} `{asset['unit']}(s)`", "inline": False}
                 ]
             ),
             view=AssetOverviewView(asset),
@@ -209,7 +211,7 @@ class DeleteAssetSelect(discord.ui.Select):
             discord.SelectOption(
                 label=a["name"],
                 value=a["id"],
-                description=f"ID: {a['id']} | Stock: {int(a['stock'])} {a['unit']}(s)",
+                description=f"ID: {a['id']} | Stock: {fmt_num(a['stock'])} {a['unit']}(s)",
             )
             for a in asset_list[:25]
         ]
