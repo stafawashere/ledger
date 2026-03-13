@@ -4,11 +4,10 @@ A Discord bot for tracking balances, debts, and inventory — built with slash c
 
 ## Features
 
-- **Balance Tracking** — Manage a central ledger balance with add, subtract, and set operations
+- **Balance Management** — Manage a central ledger balance with add, subtract, and set operations
 - **Debt Management** — Track associates and their debts with full history per person
 - **Asset Inventory** — Track stock quantities with custom units, thumbnails, and settings
-- **History Logging** — Automatic audit trail on every mutation with filtering and export
-- **Hot Reload** — Edit cogs and see changes live without restarting
+- **History Audits** — Automatic audit trail on every mutation with filtering and export
 
 ## Commands
 
@@ -62,7 +61,7 @@ uv run bot.py
 
 ```
 ledger-bot/
-├── bot.py               # Entry point, cog loader, hot reload
+├── bot.py
 ├── cogs/
 │   ├── ledger/          # Balance management + history export
 │   ├── tab/             # Associate & debt tracking
